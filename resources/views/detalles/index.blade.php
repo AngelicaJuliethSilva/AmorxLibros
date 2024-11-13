@@ -2,47 +2,31 @@
 
 @section('content')
     <div class="container">
-        <h2>Detalles de la Venta</h2>
-
-        @if($detalleVentas->isNotEmpty())
-            <div class="card">
-                <div class="card-header">
-                    <h3>Venta #{{ $detalleVentas->first()->id_venta }}</h3>
-                </div>
-                <div class="card-body">
-                    <!-- Datos del Cliente -->
-                    <p><strong>Cliente:</strong> {{ $detalleVentas->first()->cliente }} {{ $detalleVentas->first()->cliente_apellido }}</p>
-                    <p><strong>Fecha de Venta:</strong> {{ \Carbon\Carbon::parse($detalleVentas->first()->fecha_de_venta)->format('d/m/Y') }}</p>
-
-                    <!-- Detalle de los Libros -->
-                    <h4>Libros Vendidos</h4>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Libro</th>
-                                <th>Cantidad</th>
-                                <th>Precio</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($detalleVentas as $detalle)
-                                <tr>
-                                    <td>{{ $detalle->libro }}</td>
-                                    <td>{{ $detalle->cantidad }}</td>
-                                    <td>${{ number_format($detalle->precio, 2) }}</td>
-                                    <td>${{ number_format($detalle->precio * $detalle->cantidad, 2) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-
-                    <!-- Total de la venta -->
-                    <h4>Total de la Venta: ${{ number_format($detalleVentas->first()->total, 2) }}</h4>
-                </div>
-            </div>
-        @else
-            <p>No se encontraron detalles para esta venta.</p>
-        @endif
+        <h2>Detalle de la Venta</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Libro</th>
+                    <th>Precio</th>
+                    <th>Cantidad</th>
+                    <th>Cliente</th>
+                    <th>Total Venta</th>
+                    <th>Fecha de Venta</th>
+                </tr>
+                <a href="{{ route('ventas.index') }}" class="btn btn-primary mb-3">Volver</a>
+            </thead>
+            <tbody>
+                @foreach ($detalleVentas as $detalle)
+                    <tr>
+                        <td>{{ $detalle->libro }}</td>
+                        <td>{{ $detalle->precio }}</td>
+                        <td>{{ $detalle->cantidad }}</td>
+                        <td>{{ $detalle->cliente }} {{ $detalle->cliente_apellido }}</td>
+                        <td>{{ $detalle->total }}</td>
+                        <td>{{ \Carbon\Carbon::parse($detalle->fecha_de_venta)->format('d-m-Y H:i') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
 @endsection

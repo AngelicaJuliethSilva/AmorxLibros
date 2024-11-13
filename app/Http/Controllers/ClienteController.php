@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use Illuminate\Http\Request;
+use App\Models\Venta;
+use Carbon\Carbon;
 
 class ClienteController extends Controller
 {
@@ -70,5 +72,32 @@ class ClienteController extends Controller
     {
         Cliente::destroy($id);
         return redirect()->route('clientes.index');
+    }
+
+    public function ReporteClientesFrecuentes(Request $request)
+    {
+        // Validar las fechas de inicio y fin
+        $request->validate([
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+        ]);
+    
+        // Obtener el reporte de clientes frecuentes (con la cantidad de ventas por cliente)
+        $clientesFrecuentes = Venta::whereBetween('ventas.fecha_de_venta', [
+            Carbon::parse($request->fecha_inicio)->startOfDay(),
+            Carbon::parse($request->fecha_fin)->endOfDay()
+        ])
+        ->join('clientes', 'ventas.id_cliente_venta', '=', 'clientes.id_cliente')
+        ->select(
+            'clientes.nombre as cliente',
+            'clientes.apellido as cliente_apellido',
+            \DB::raw('COUNT(ventas.id_venta) as numero_compras')  // Conteo de ventas por cliente
+        )
+        ->groupBy('clientes.id_cliente', 'clientes.nombre', 'clientes.apellido')  // Agrupar por cliente
+        ->orderByDesc('numero_compras')  // Ordenar de mayor a menor cantidad de ventas
+        ->get();
+    
+        // Retornar el reporte a la vista 'clientes.report'
+        return view('clientes.report', compact('clientesFrecuentes', 'request'));
     }
 }

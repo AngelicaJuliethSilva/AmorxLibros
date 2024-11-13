@@ -30,4 +30,6 @@ Route::resource('autores', AutorController::class);
 Route::resource('clientes', ClienteController::class);
 Route::resource('ventas', VentaController::class);
 Route::resource('detalles', DetalleVentaController::class);
-Route::get('detalles/{id}', [DetalleVentaController::class, 'index'])->name('detalles.index');
+Route::get('detalle-venta/{id}', [DetalleVentaController::class, 'index'])->name('detalle_venta.index');
+Route::get('/reporte-ventas', [VentaController::class, 'ObtenerReporteVentas'])->name('ventas.report');
+Route::get('/reporte-clientes-frecuentes', [ClienteController::class, 'ReporteClientesFrecuentes'])->name('clientes.report');

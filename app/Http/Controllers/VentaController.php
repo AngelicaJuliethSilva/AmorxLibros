@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Venta;
 use App\Models\Cliente;
 use App\Models\Libro;
+use App\Models\DetalleVenta;
 use Illuminate\Http\Request;
 
 class VentaController extends Controller
@@ -77,10 +78,8 @@ class VentaController extends Controller
         $total += $libro->precio * $cantidad;
 
         }
-   
-            
 
-         return redirect()->route('ventas.create')->with('success', 'Venta registrada exitosamente.');
+         return redirect()->route('ventas.index')->with('success', 'Venta registrada exitosamente.');
     }
 
    
@@ -106,11 +105,38 @@ class VentaController extends Controller
         return redirect()->route('ventas.index');
     }
 
-
     // Eliminar una venta
     public function destroy($id)
     {
         Venta::destroy($id);
         return redirect()->route('ventas.index');
     }
+
+    public function ObtenerReporteVentas(Request $request)
+    {
+        // Validar las fechas de inicio y fin
+        $request->validate([
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+        ]);
+
+        // Obtener el reporte de ventas en el rango de fechas
+        $ventas = Venta::whereBetween(\DB::raw('DATE(ventas.fecha_de_venta)'), [$request->fecha_inicio, $request->fecha_fin])
+        ->join('clientes', 'ventas.id_cliente_venta', '=', 'clientes.id_cliente')
+        ->select(
+            'ventas.id_venta',
+            'clientes.nombre as cliente',
+            'clientes.apellido as cliente_apellido',
+            'ventas.fecha_de_venta',
+            'ventas.total'
+        )
+        ->orderBy('ventas.fecha_de_venta', 'asc')
+        ->get();
+
+           
+
+        // Retornar el reporte a una vista
+        return view('ventas.report', compact('ventas', 'request'));
+    }
+
 }

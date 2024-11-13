@@ -6,6 +6,24 @@
 @section('content')
     <h1>Lista de Clientes</h1>
     <a href="{{ route('clientes.create') }}">Crear un nuevo cliente</a>
+        <!-- Formulario para generar el reporte de clientes frecuentes -->
+        <form action="{{ route('clientes.report') }}" method="GET" class="mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <label for="fecha_inicio">Fecha de inicio</label>
+                <input type="date" id="fecha_inicio" name="fecha_inicio" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <label for="fecha_fin">Fecha de fin</label>
+                <input type="date" id="fecha_fin" name="fecha_fin" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary mt-4">Generar Reporte de Clientes Frecuentes</button>
+            </div>
+        </div>
+    </form>
     <table>
         <thead>
             <tr>

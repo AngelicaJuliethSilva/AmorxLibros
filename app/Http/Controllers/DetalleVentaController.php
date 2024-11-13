@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DetalleVenta;
-use App\Models\Venta;
-use App\Models\Libro;
 use App\Models\Cliente;
+use App\Models\Venta;
+use App\Models\DetalleVenta;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class DetalleVentaController extends Controller
 {
-    // Mostrar los detalles de una venta
     public function index($id)
     {
         // Obtener los detalles de la venta con cliente y libros asociados
@@ -20,9 +17,16 @@ class DetalleVentaController extends Controller
             ->join('ventas', 'detalle_ventas.id_venta', '=', 'ventas.id_venta')
             ->join('clientes', 'ventas.id_cliente_venta', '=', 'clientes.id_cliente')
             ->where('detalle_ventas.id_venta', $id)
-            ->select('detalle_ventas.cantidad', 'libros.titulo as libro', 'libros.precio', 
-                     'clientes.nombre as cliente', 'clientes.apellido as cliente_apellido', 
-                     'ventas.total', 'ventas.fecha_de_venta', 'ventas.id_venta')
+            ->select(
+                'detalle_ventas.cantidad',
+                'libros.titulo as libro',
+                'libros.precio',
+                'clientes.nombre as cliente',
+                'clientes.apellido as cliente_apellido',
+                'ventas.total',
+                'ventas.fecha_de_venta',
+                'ventas.id_venta'
+            )
             ->get();
 
         // Si no hay detalles para esa venta, redirigir con un mensaje de error
@@ -30,7 +34,7 @@ class DetalleVentaController extends Controller
             return redirect()->route('ventas.index')->with('error', 'No se encontraron detalles para esta venta.');
         }
 
-        // Retornar los datos a la vista 'detalles.index'
+        // Pasar los datos a la vista 'detalles.index'
         return view('detalles.index', compact('detalleVentas'));
     }
 }

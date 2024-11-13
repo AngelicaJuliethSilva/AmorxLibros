@@ -7,6 +7,22 @@
     <h1>Lista de Ventas</h1>
     <a href="{{ route('ventas.create') }}">Crear una nueva venta</a>
     
+    <form action="{{ route('ventas.report') }}" method="GET" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label for="fecha_inicio">Fecha de inicio</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <label for="fecha_fin">Fecha de fin</label>
+            <input type="date" id="fecha_fin" name="fecha_fin" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary mt-4">Generar Reporte</button>
+        </div>
+    </div>
+    </form>
+    
     @if(session('success'))
         <div class="alert alert-success">
             {{ session('success') }}
@@ -25,14 +41,12 @@
         <tbody>
             @foreach($ventas as $venta)
                 <tr>
-                    <a href="{{ route('detalles.index', ['id' => $venta->id_venta]) }}">Ver detalles</a>
+                    
                     <td>{{ $venta->cliente->nombre }} {{ $venta->cliente->apellido }}</td>              
                     <td>{{ $venta->fecha_de_venta->format('d-m-Y H:i') }}</td>
                     <td>${{ number_format($venta->total, 2) }}</td>
                     <td>
-                        <a href="{{ route('detalles.index', ['id' => $venta->id_venta]) }}">Ver detalles</a>
-                        <a href="{{ route('ventas.show', $venta->id_venta) }}">Ver</a>
-                        <a href="{{ route('ventas.edit', $venta->id_venta) }}">Editar</a>
+                        <a href="{{ route('detalle_venta.index', $venta->id_venta) }}">Ver detalles</a>
                         <form action="{{ route('ventas.destroy', $venta->id_venta) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
