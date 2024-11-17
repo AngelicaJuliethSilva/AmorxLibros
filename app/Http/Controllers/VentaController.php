@@ -7,6 +7,9 @@ use App\Models\Cliente;
 use App\Models\Libro;
 use App\Models\DetalleVenta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class VentaController extends Controller
 {
@@ -31,55 +34,36 @@ class VentaController extends Controller
     // Guardar una nueva venta
     public function store(Request $request)
     {
+        // Validar los datos del formulario
         $request->validate([
-        'id_cliente_venta' => 'required|exists:clientes,id_cliente',
-        'libro_id' => 'required|array',
-        'libro_id.*' => 'exists:libros,id_libro',
-        'cantidad' => 'required|array',
-        'cantidad.*' => 'integer|min:1',
+            'id_cliente_venta' => 'required|exists:clientes,id_cliente',
+            'libro_id' => 'required|array',
+            'libro_id.*' => 'exists:libros,id_libro',
+            'cantidad' => 'required|array',
+            'cantidad.*' => 'integer|min:1',
         ]);
-       
-            // Inicializar el total de la venta
-         $total = 0;
-
-        // Calcular el total sumando el precio de cada libro por su cantidad
-        foreach ($request->libro_id as $index => $libroId) {
-        $libro = Libro::findOrFail($libroId); // Obtener el libro
-        $cantidad = $request->cantidad[$index];
-        $total += $libro->precio * $cantidad; // Sumar al total
-    }
-
-        $venta = Venta::create([
-        'id_cliente_venta' => $request->id_cliente_venta,
-        'total' => $total,
+    
+        try {
+            // Convertir los arrays de IDs y cantidades a formato JSON
+            $libroIds = json_encode($request->libro_id);
+            $cantidades = json_encode($request->cantidad);
+    
+            // Llamar al procedimiento almacenado para registrar la venta
+            DB::statement('CALL RegistrarVenta(?, ?, ?)', [
+                $request->id_cliente_venta,
+                $libroIds,
+                $cantidades,
             ]);
-        
-        // Guardar cada detalle de la venta en la tabla detalle_ventas
-        foreach ($request->libro_id as $index => $libroId) {
-        $cantidad = $request->cantidad[$index];
-
-        // Crear un registro en detalle_ventas para cada libro y su cantidad
-        \App\Models\DetalleVenta::create([
-            'id_libro_venta' => $libroId,  // Relacionar con el libro
-            'cantidad' => $cantidad,       // La cantidad seleccionada
-            'id_venta' => $venta->id_venta, // Relacionar con la venta creada
-        ]);
-
-        // Restar la cantidad vendida del inventario
-        $libro = Libro::find($libroId);
-        if ($libro && $libro->cantidad >= $cantidad) {
-            $libro->cantidad -= $cantidad;  // Resta la cantidad vendida
-            $libro->save();
-        } else {
-            return redirect()->route('ventas.index')->with('error', 'No hay suficiente stock para el libro: ' . $libro->titulo);
+    
+            // Obtener la venta que se acaba de registrar
+            $venta = Venta::latest()->first();
+    
+            // Redirigir con mensaje de éxito
+            return redirect()->route('ventas.index')->with('success', 'Venta registrada exitosamente.');
+        } catch (\Exception $e) {
+            // Manejar errores y redirigir con mensaje de error
+            return redirect()->route('ventas.index')->with('error', 'Hubo un problema al registrar la venta: ' . $e->getMessage());
         }
-
-        // Calcular el total de la venta
-        $total += $libro->precio * $cantidad;
-
-        }
-
-         return redirect()->route('ventas.index')->with('success', 'Venta registrada exitosamente.');
     }
 
    
@@ -120,21 +104,15 @@ class VentaController extends Controller
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
         ]);
 
-        // Obtener el reporte de ventas en el rango de fechas
-        $ventas = Venta::whereBetween(\DB::raw('DATE(ventas.fecha_de_venta)'), [$request->fecha_inicio, $request->fecha_fin])
-        ->join('clientes', 'ventas.id_cliente_venta', '=', 'clientes.id_cliente')
-        ->select(
-            'ventas.id_venta',
-            'clientes.nombre as cliente',
-            'clientes.apellido as cliente_apellido',
-            'ventas.fecha_de_venta',
-            'ventas.total'
-        )
-        ->orderBy('ventas.fecha_de_venta', 'asc')
-        ->get();
-
-           
-
+        $fechaInicio = Carbon::parse($request->fecha_inicio)->format('Y-m-d H:i:s');
+        $fechaFin = Carbon::parse($request->fecha_fin)->format('Y-m-d H:i:s');
+    
+        // Llamar al procedimiento almacenado
+        $ventas = collect(DB::select('CALL ObtenerReporteVentas(?, ?)', [
+            $request->fecha_inicio,
+            $request->fecha_fin,
+        ]));
+    
         // Retornar el reporte a una vista
         return view('ventas.report', compact('ventas', 'request'));
     }

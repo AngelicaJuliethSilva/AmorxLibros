@@ -6,6 +6,7 @@ use App\Models\Libro;
 use App\Models\Categoria;
 use App\Models\Autor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LibroController extends Controller
 {
@@ -25,26 +26,33 @@ class LibroController extends Controller
         return view('libros.create', compact('categorias', 'autores'));
     }
 
-    // Guardar un nuevo libro
     public function store(Request $request)
     {
         $request->validate([
-            'titulo' => 'required|string|max:50',
-            'isbn' => 'required|integer',
-            'precio' => 'required|numeric',
-            'cantidad' => 'nullable|integer',
-            'id_categoria' => 'required|exists:categorias,id_categoria', // Relación con categorias
-            'autor_id' => 'required|exists:autors,id_autor', // Relación con autores
+            'titulo' => 'required|string|max:255',
+            'isbn' => 'required|string|max:20',
+            'precio' => 'required|numeric|min:0',
+            'cantidad' => 'required|integer|min:1',
+            'id_categoria' => 'required|exists:categorias,id_categoria',
         ]);
-
-        Libro::create([
-            'titulo' => $request->titulo,
-            'isbn' => $request->isbn,
-            'precio' => $request->precio,
-            'cantidad' => $request->cantidad,
-            'id_categoria' => $request->id_categoria,
-        ]);
-        return redirect()->route('libros.index')->with('success', 'Libro registrado exitosamente.');
+    
+        try {
+            // Llamar al procedimiento almacenado para registrar el libro
+            DB::statement('CALL RegistrarLibro(?, ?, ?, ?, ?)', [
+                $request->titulo,
+                $request->isbn,
+                $request->precio,
+                $request->cantidad,  // Solo un valor de cantidad
+                $request->id_categoria,
+            ]);
+        
+            // Redirigir con mensaje de éxito
+            return redirect()->route('libros.index')->with('success', 'Libro registrado exitosamente.');
+        } catch (\Exception $e) {
+            // Manejar errores
+            return redirect()->route('libros.index')->with('error', 'Hubo un problema al registrar el libro: ' . $e->getMessage());
+        }
+        
     }
 
     // Mostrar un libro específico
@@ -69,12 +77,19 @@ class LibroController extends Controller
             'cantidad' => 'nullable|integer',
         ]);
 
-        $libro = Libro::findOrFail($id);
-        $libro->update([
-            'precio' => $request->precio,
-            'cantidad' => $request->cantidad,
+    try {
+        // Llamar al procedimiento almacenado para actualizar el libro
+        DB::statement('CALL ActualizarLibro(?, ?, ?)', [
+            $id,
+            $request->precio,
+            $request->cantidad,
         ]);
+
         return redirect()->route('libros.index')->with('success', 'Precio actualizado exitosamente.');
+        } catch (\Exception $e) {
+        // Manejar errores
+        return redirect()->route('libros.index')->with('error', 'Hubo un problema al actualizar el libro: ' . $e->getMessage());
+        }
     }
 
     // Eliminar un libro
